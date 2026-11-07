@@ -15,17 +15,18 @@ export function Bookings() {
     ...db.requests.filter(r => r.status === 'booked' || r.status === 'quoted').map(r => ({ date: r.date, time: r.time, kind: 'Event', title: r.bookingName.replace('Example: ', ''), detail: `${r.guests} guests · ${findActivity(r.activity)?.name || 'Activity TBC'}`, pill: r.status, go: 'staff/requests/' + r.id })),
     ...db.workshops.map(w => ({ date: w.date, time: w.time, kind: 'Workshop', title: w.title, detail: `${w.booked} booked of ${w.spots}${w.holds.length ? ` · ${w.holds.length} held` : ''}`, go: 'staff/workshops' })),
     ...CLASSES.map(c => ({ date: c.date, time: c.time, kind: '1-1 class', title: c.who, detail: c.what })),
+    ...(db.tables || []).map(x => ({ date: x.date, time: x.time, kind: 'Table', title: x.name, detail: `${x.people} people · ${findActivity(x.activity)?.name || 'choosing on arrival'} · ${x.status === 'paid' ? 'paid online' : 'pay at studio'}`, pill2: x.status === 'paid' ? 'booked' : 'quoted', pill2t: x.status === 'paid' ? 'Paid online' : 'Pay at studio' })),
   ].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
   return (
     <>
       <h1>Bookings</h1>
-      <p className="sub">Events, workshops and 1-1 classes in one list. Front desk, Darlene, the lead instructor and ops see this.</p>
+      <p className="sub">Events, table bookings, workshops and 1-1 classes in one list. Front desk, Darlene, the lead instructor and ops see this.</p>
       <div className="cardlist">
         {items.map((i, k) => (
           <button key={k} className="erow" style={{ cursor: i.go ? 'pointer' : 'default' }} onClick={() => i.go && go(i.go)}>
             <DateBox date={i.date} />
             <span className="m"><b>{i.title}</b><small>{i.kind} · {i.time} · {i.detail}</small></span>
-            {i.pill ? <span className={'pill ' + i.pill}>{i.pill === 'booked' ? 'Deposit paid' : 'Awaiting deposit'}</span> : <span className="pill new">{i.kind}</span>}
+            {i.pill ? <span className={'pill ' + i.pill}>{i.pill === 'booked' ? 'Deposit paid' : 'Awaiting deposit'}</span> : i.pill2 ? <span className={'pill ' + i.pill2}>{i.pill2t}</span> : <span className="pill new">{i.kind}</span>}
           </button>))}
       </div>
     </>

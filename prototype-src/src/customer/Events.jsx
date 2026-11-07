@@ -28,9 +28,9 @@ export default function Events() {
     <section className="sec"><div className="wrap"><div className="formwrap">
       <div className="card done">
         <img src={img('kids')} alt="" />
-        <div className="big">Request sent!</div>
+        <div className="big lc">request sent!</div>
         <p style={{ margin: 0 }}>Thank you, {f.contactName.split(' ')[0] || 'friend'}. Our team will send your quote on WhatsApp and email <b>today</b>. Your date is held once the 70% deposit is paid.</p>
-        <button className="btn b" onClick={() => go('staff/requests')}>See it arrive in the staff app</button>
+        <button className="btn b" onClick={() => go('home')}>Back to home</button>
         <button className="btn o" onClick={() => { setF(blank); setSent(false); to(-1) }}>Back to events</button>
       </div>
     </div></div></section>
@@ -40,14 +40,15 @@ export default function Events() {
     <>
       <section className="hero"><div className="wrap">
         <div className="txt">
-          <h1>Host your event at Glaze</h1>
+          <span className="eyebrow">events</span>
+          <h1 className="lc">host an event</h1>
           <p>Birthdays, team bonding, group hangouts and pop-ups. Tell us what you have in mind and we’ll send you a quote the same day.</p>
           <div className="acts"><button className="btn y" onClick={() => to(0)}>Request a quote</button></div>
         </div>
         <img className="ph" src={img('kids')} alt="A child painting at Glaze" />
       </div></section>
       <section className="sec"><div className="wrap">
-        <h2>How it works</h2>
+        <h2 className="lc">how it works</h2>
         <div className="steps3">
           {[['Tell us about your event', 'Date, group size, activity and anything else we should know.'], ['Get your quote today', 'We review every request and send your quote on WhatsApp and email.'], ['Lock in your date', 'Pay a 70% deposit to confirm. The rest is paid on the day.']].map(([t, d], i) => (
             <div key={t} className="stepc"><span className="n">{i + 1}</span><div><b>{t}</b><span>{d}</span></div></div>
@@ -61,12 +62,12 @@ export default function Events() {
       <section className="sec"><div className="wrap">
         <div className="twocol">
           <div className="faq">
-            <h2 style={{ marginBottom: 12 }}>Good to know</h2>
+            <h2 className="lc" style={{ marginBottom: 12 }}>good to know</h2>
             <div className="note info">Darlene is putting together the real questions. These are examples.</div>
             {FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
           </div>
           <div className="channel">
-            <b>Ready when you are</b>
+            <b>ready when you are</b>
             <span>Tell us your date and group size. We’ll reply with a quote today.</span>
             <button className="btn y" onClick={() => to(0)}>Request a quote</button>
           </div>

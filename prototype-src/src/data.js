@@ -97,6 +97,10 @@ export function seed() {
       { id: 'r3', status: 'quoted', created: '2026-11-03', type: 'Group gathering', audience: 'Adults', ages: '20s', celebrant: '', bookingName: 'Example: Book club', date: '2026-11-15', time: '16:00', duration: '2 hours', guests: 10, activity: 'calabash-s', unsure: '', vendor: 'none', logistics: '', contactName: 'Example organiser', phone: '026 000 0000', email: '', channel: 'WhatsApp', quoteTotal: 1800, depositDue: '2026-11-08' },
       { id: 'r4', status: 'booked', created: '2026-10-28', type: 'Birthday', audience: 'Kids', ages: '9–11', celebrant: 'Kofi', bookingName: 'Example: Owusu family', date: '2026-11-14', time: '13:00', duration: '2 hours', guests: 15, activity: 'k-tshirt', vendor: 'glaze', logistics: '', contactName: 'Example parent', phone: '027 000 0000', email: '', channel: 'Both', quoteTotal: 2430, depositPaid: 1701 },
     ],
+    tables: [
+      { id: 't1', date: '2026-11-08', time: '14:00', adults: 2, kids: 2, people: 4, activity: '', pay: 'studio', name: 'Example: Boateng family', phone: '024 000 0000', status: 'pay at studio' },
+      { id: 't2', date: '2026-11-08', time: '16:00', adults: 3, kids: 0, people: 3, activity: 'canvas', pay: 'now', name: 'Example: Adjoa + friends', phone: '055 000 0000', total: 750, status: 'paid' },
+    ],
     workshops: [
       { id: 'w1', title: 'Christmas ornament painting', date: '2026-12-05', time: '11:00', price: 250, spots: 16, img: 'calabash', booked: 11, holds: [{ name: 'Example guest', until: '2026-11-09' }], waitlist: [] },
       { id: 'w2', title: 'Charcoal sketching basics', date: '2026-12-06', time: '15:00', price: 250, spots: 12, img: 'sketch', booked: 12, holds: [], waitlist: ['Example guest A', 'Example guest B'] },

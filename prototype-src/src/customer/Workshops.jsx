@@ -38,8 +38,9 @@ export default function Workshops() {
     <>
       <section className="hero slim"><div className="wrap">
         <div className="txt">
-          <h1>December workshops</h1>
-          <p>A new schedule every month, out on the 1st. Book your spot online, or hold it and pay at the studio.</p>
+          <span className="eyebrow">calendar</span>
+          <h1 className="lc">upcoming workshops</h1>
+          <p>A new schedule every month, out on the 1st. This is December. Book your spot online, or hold it and pay at the studio.</p>
         </div>
       </div></section>
       <section className="sec"><div className="wrap">
@@ -63,7 +64,7 @@ export default function Workshops() {
           })}
         </div>
         <div className="channel">
-          <b>Never miss a workshop</b>
+          <b>never miss a workshop</b>
           <span>Follow the Glaze WhatsApp channel. We post the schedule, closures and offers, no more than three times a month.</span>
           <button className="btn y" style={{ alignSelf: 'flex-start' }} onClick={() => setToast('Opens the Glaze WhatsApp channel')}>Follow on WhatsApp</button>
         </div>

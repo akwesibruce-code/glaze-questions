@@ -8,6 +8,7 @@ import { Bookings, WorkshopsAdmin } from './Bookings.jsx'
 import Money from './Money.jsx'
 import Stock from './Stock.jsx'
 import Tools from './Tools.jsx'
+import Login from './Login.jsx'
 
 const TABS = [
   ['', 'Today', () => true],
@@ -21,8 +22,9 @@ const TABS = [
 
 export default function Staff({ route }) {
   const { db } = useStore()
-  const [role, setRole] = useState(() => { try { return sessionStorage.getItem('glaze-role') || 'darlene' } catch (e) { return 'darlene' } })
-  useEffect(() => { try { sessionStorage.setItem('glaze-role', role) } catch (e) {} }, [role])
+  const [role, setRole] = useState(() => { try { return sessionStorage.getItem('glaze-role') || '' } catch (e) { return '' } })
+  useEffect(() => { try { role ? sessionStorage.setItem('glaze-role', role) : sessionStorage.removeItem('glaze-role') } catch (e) {} }, [role])
+  if (!role) return <Login onIn={r => { setRole(r); go('staff') }} />
   const can = ROLES[role].can
   const parts = route.split('/')
   const tab = parts[1] || ''
@@ -34,12 +36,13 @@ export default function Staff({ route }) {
     <div className="staff">
       <header className="shead"><div className="in">
         <img src={logo} alt="Glaze" />
-        <span className="lbl">Staff app</span>
+        <span className="lbl">Staff</span>
         <label className="who"><span>Signed in as</span>
           <select value={role} onChange={e => setRole(e.target.value)} aria-label="Switch role">
             {Object.entries(ROLES).map(([k, r]) => <option key={k} value={k}>{r.name}</option>)}
           </select>
         </label>
+        <button className="signout" onClick={() => setRole('')}>Sign out</button>
       </div></header>
       <nav className="stabs" aria-label="Staff sections"><div className="in">
         {TABS.filter(t => t[2](can)).map(([k, l]) => (
@@ -48,7 +51,7 @@ export default function Staff({ route }) {
           </button>
         ))}
       </div></nav>
-      <main className="smain">
+      <main className="smain pagein" key={tab}>
         {!allowed ? <div className="lock">{ROLES[role].name} doesn’t have access to this section. Darlene decides who sees what.</div>
           : tab === 'requests' ? <Requests role={role} id={parts[2]} />
           : tab === 'bookings' ? <Bookings />

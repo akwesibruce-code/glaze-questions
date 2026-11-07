@@ -9,7 +9,8 @@ export default function Menu() {
     <>
       <section className="hero slim"><div className="wrap">
         <div className="txt">
-          <h1>Our art menu</h1>
+          <span className="eyebrow">art menu</span>
+          <h1 className="lc">pick your art</h1>
           <p>Experiences for every level. Walk in, or book for your group. Groups of 6 or more get 10% off.</p>
         </div>
       </div></section>
@@ -29,7 +30,7 @@ export default function Menu() {
         {tab === 'adults' && <>
           <p className="lead" style={{ fontSize: 13 }}>* Needs at least 4 people and a week’s notice.</p>
           <div className="woodcard">
-            <h3>Woodworking</h3>
+            <h3 className="lc">woodworking</h3>
             <span className="lead">Create your own unique wooden piece, from planters to side tables. We curate it with you, so the price depends on what you make.</span>
             <div className="menu-grid">
               <div className="menuitem"><div><b>Planter stand</b><small>Build the base, paint your pot, add a plant</small></div><b className="p">{ghs(600)}</b></div>
@@ -37,7 +38,7 @@ export default function Menu() {
             </div>
           </div>
         </>}
-        <button className="btn y" style={{ alignSelf: 'flex-start' }} onClick={() => go('events')}>Book for a group</button>
+        <div className="acts"><button className="btn y" onClick={() => go('book')}>Book a table</button><button className="btn o" onClick={() => go('events')}>Book for a group</button></div>
       </div></section>
     </>
   )

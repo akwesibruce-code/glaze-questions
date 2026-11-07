@@ -1,61 +1,68 @@
 import { useEffect, useRef, useState } from 'react'
-import App from './App.jsx'
 import { StoreProvider, useStore } from './store.jsx'
 
-// A computer has a mouse or trackpad that can hover. Phones and tablets don't.
 // Checked once when the page opens. A computer has a fine pointer that can hover
 // and a reasonably wide screen; anything else gets the phone layout.
 const detect = () => (window.matchMedia('(hover: hover) and (pointer: fine)').matches && window.innerWidth >= 900 ? 'desktop' : 'phone')
 const ss = { get: k => { try { return sessionStorage.getItem(k) } catch (e) { return null } }, set: (k, v) => { try { sessionStorage.setItem(k, v) } catch (e) {} } }
-const routeOf = h => (h || '').replace(/^#\/?/, '') || 'home'
+const routeOf = h => (h || '').replace(/^#\/?/, '')
+const BASE = import.meta.env.BASE_URL
 
-export default function Shell() {
+const COPY = {
+  site: {
+    tag: 'Glaze website · prototype',
+    tip: <>Try this: book a table or send an event request, then open the <a href={`${BASE}staff/`} target="_blank" rel="noopener">staff platform prototype</a> to see it arrive.</>,
+    side: ['Phone view', 'This is how customers see the Glaze website on their phones.'],
+  },
+  staff: {
+    tag: 'Glaze staff platform · prototype',
+    tip: <>Try this: sign in as Darlene and approve a request. Sign out and back in as another role to see what each person can do.</>,
+    side: ['Phone view', 'This is how staff use the platform on their phones, added to the home screen like an app.'],
+  },
+}
+
+// Wraps either prototype with a slim preview bar: Desktop / Phone switch and a
+// reset. Customer and staff prototypes are separate pages with no switch between them.
+export default function Shell({ kind, App }) {
   const [native] = useState(detect)
-  const [mode, setMode] = useState(() => ss.get('glaze-view') || native)
+  const key = 'glaze-view-' + kind
+  const [mode, setMode] = useState(() => ss.get(key) || native)
   const [route, setRoute] = useState(routeOf(location.hash))
-  const [tip, setTip] = useState(() => ss.get('glaze-tip') !== 'off')
+  const [tip, setTip] = useState(() => ss.get('glaze-tip-' + kind) !== 'off')
   const frame = useRef(null)
   const direct = mode === native
-  useEffect(() => ss.set('glaze-view', mode), [mode])
+  const c = COPY[kind]
+  useEffect(() => ss.set(key, mode), [mode])
 
-  // keep the shell's route in step with whichever window shows the app
-  useEffect(() => {
-    if (direct) {
-      const f = () => setRoute(routeOf(location.hash))
-      addEventListener('hashchange', f); return () => removeEventListener('hashchange', f)
-    }
-  }, [direct])
   const onFrameLoad = () => {
     const w = frame.current?.contentWindow; if (!w) return
-    const f = () => { const r = routeOf(w.location.hash); setRoute(r); history.replaceState(null, '', '#/' + r) }
+    const f = () => { const r = routeOf(w.location.hash); setRoute(r); history.replaceState(null, '', r ? '#/' + r : location.pathname) }
     w.addEventListener('hashchange', f); f()
   }
-  const nav = path => {
-    if (direct) location.hash = '/' + path
-    else if (frame.current) frame.current.contentWindow.location.hash = '/' + path
-  }
-  const closeTip = () => { setTip(false); ss.set('glaze-tip', 'off') }
-  const src = `${location.pathname}?frame=1#/${route}`
+  useEffect(() => {
+    if (!direct) return
+    const f = () => setRoute(routeOf(location.hash))
+    addEventListener('hashchange', f); return () => removeEventListener('hashchange', f)
+  }, [direct])
+
+  const closeTip = () => { setTip(false); ss.set('glaze-tip-' + kind, 'off') }
+  const src = `${location.pathname}?frame=1${route ? '#/' + route : ''}`
 
   const bar = reset => (
     <>
       <div className="protobar"><div className="in">
-        <span className="tag">Glaze prototype</span>
+        <span className="tag">{c.tag}</span>
         <span className="msg">Example data only. Nothing is sent or charged.</span>
         <div className="ctrls">
-          <div className="seg" role="group" aria-label="Which side of the app">
-            <button className={!route.startsWith('staff') ? 'on' : ''} onClick={() => nav('home')}>Customer site</button>
-            <button className={route.startsWith('staff') ? 'on' : ''} onClick={() => nav('staff')}>Staff app</button>
-          </div>
           <div className="seg" role="group" aria-label="Preview size">
-            <button className={mode === 'desktop' ? 'on' : ''} onClick={() => setMode('desktop')} aria-pressed={mode === 'desktop'}>Desktop</button>
-            <button className={mode === 'phone' ? 'on' : ''} onClick={() => setMode('phone')} aria-pressed={mode === 'phone'}>Phone</button>
+            <button className={mode === 'desktop' ? 'on' : ''} onClick={() => setMode('desktop')} aria-pressed={mode === 'desktop'}>Desktop view</button>
+            <button className={mode === 'phone' ? 'on' : ''} onClick={() => setMode('phone')} aria-pressed={mode === 'phone'}>Phone view</button>
           </div>
           <button className="reset" onClick={reset}>Reset demo</button>
         </div>
       </div></div>
       {tip && <div className="tip"><div className="in">
-        <span><b>Try this:</b> send an event request on the customer site, then open the Staff app and approve it as Darlene. Use “Signed in as” to see each role.</span>
+        <span>{c.tip}</span>
         <button onClick={closeTip} aria-label="Hide tip">×</button>
       </div></div>}
     </>
@@ -69,16 +76,16 @@ export default function Shell() {
       {bar(resetFramed)}
       {mode === 'phone'
         ? <div className="stage">
-            <div className="side">
-              <h2>Phone view</h2>
-              <p>This is how customers and staff see Glaze on their phones.</p>
-              <p>Scroll and tap inside the phone. Switch to Desktop at the top to see the full website.</p>
-            </div>
-            <div className="phone"><iframe ref={frame} title="Glaze on a phone" src={src} onLoad={onFrameLoad} /></div>
+            <div className="side"><h2>{c.side[0]}</h2><p>{c.side[1]}</p><p>Scroll and tap inside the phone. Switch to Desktop view at the top to see the full-size version.</p></div>
+            <div className="phone"><iframe ref={frame} title="Phone preview" src={src} onLoad={onFrameLoad} /></div>
           </div>
         : <Scaled frame={frame} src={src} onLoad={onFrameLoad} />}
     </>
   )
+}
+
+export function Framed({ App }) {
+  return <StoreProvider><App /></StoreProvider>
 }
 
 function DirectBar({ bar }) {
@@ -100,7 +107,7 @@ function Scaled({ frame, src, onLoad }) {
   }, [])
   return (
     <div ref={box} className="scaled" style={{ height: s.h }}>
-      <iframe ref={frame} title="Glaze on a desktop" src={src} onLoad={onLoad} style={{ width: 1280, height: s.h / s.scale, transform: `scale(${s.scale})` }} />
+      <iframe ref={frame} title="Desktop preview" src={src} onLoad={onLoad} style={{ width: 1280, height: s.h / s.scale, transform: `scale(${s.scale})` }} />
     </div>
   )
 }
