@@ -83,6 +83,10 @@ export function isOffDay(date) {
   return d === 1 || d === 2
 }
 
+export const TODAY = new Date().toISOString().slice(0, 10)
+export const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10) }
+export const longToday = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+
 export const fmtDate = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : ''
 
 export function seed() {
@@ -105,7 +109,7 @@ export function seed() {
       { day: 'Sun 2 Nov', cash: 1780, momo: 3900, card: 2460, transfer: 850 },
       { day: 'Wed 4 Nov', cash: 640, momo: 1520, card: 980, transfer: 0 },
       { day: 'Thu 5 Nov', cash: 910, momo: 1880, card: 1200, transfer: 450 },
-      { day: 'Fri 6 Nov', cash: 1320, momo: 2410, card: 1760, transfer: 0 },
+      { day: 'Today', cash: 1320, momo: 2410, card: 1760, transfer: 0 },
     ],
     till: { expected: 1320, counted: 1300, note: 'GH₵20 short, front desk to check receipts' },
     stock: [

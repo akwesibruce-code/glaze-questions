@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore, go } from '../store.jsx'
 import { ROLES, ghs, fmtDate, findActivity } from '../data.js'
+import { DateBox } from './Today.jsx'
 
 const CLASSES = [
   { date: '2026-11-07', time: '10:00', what: '1-1 art class', who: 'Example student (age 9)' },
@@ -19,17 +20,13 @@ export function Bookings() {
     <>
       <h1>Bookings</h1>
       <p className="sub">Events, workshops and 1-1 classes in one list. Front desk, Darlene, the lead instructor and ops see this.</p>
-      <div className="panel">
-        <div className="scroll"><table className="tbl">
-          <thead><tr><th>When</th><th>What</th><th>Details</th><th></th></tr></thead>
-          <tbody>{items.map((i, k) => (
-            <tr key={k} style={{ cursor: i.go ? 'pointer' : 'default' }} onClick={() => i.go && go(i.go)}>
-              <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(i.date)}<br /><small style={{ color: 'var(--muted)' }}>{i.time}</small></td>
-              <td><b>{i.title}</b><br /><small style={{ color: 'var(--muted)' }}>{i.kind}</small></td>
-              <td>{i.detail}</td>
-              <td>{i.pill && <span className={'pill ' + i.pill}>{i.pill === 'booked' ? 'Deposit paid' : 'Awaiting deposit'}</span>}</td>
-            </tr>))}</tbody>
-        </table></div>
+      <div className="cardlist">
+        {items.map((i, k) => (
+          <button key={k} className="erow" style={{ cursor: i.go ? 'pointer' : 'default' }} onClick={() => i.go && go(i.go)}>
+            <DateBox date={i.date} />
+            <span className="m"><b>{i.title}</b><small>{i.kind} · {i.time} · {i.detail}</small></span>
+            {i.pill ? <span className={'pill ' + i.pill}>{i.pill === 'booked' ? 'Deposit paid' : 'Awaiting deposit'}</span> : <span className="pill new">{i.kind}</span>}
+          </button>))}
       </div>
     </>
   )
@@ -62,8 +59,8 @@ export function WorkshopsAdmin({ role }) {
             {w.waitlist.length > 0 && <span className="pill new">{w.waitlist.length} on waitlist</span>}
           </div>
           {w.holds.map((h, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 14 }}>
-              <span style={{ flex: 1 }}>{h.name} · pay at studio by <b>{fmtDate(h.until)}</b></span>
+            <div key={i} className="holdrow">
+              <span>{h.name} · pay at studio by <b>{fmtDate(h.until)}</b></span>
               {can.money && <button className="btn b sm" onClick={() => { hold(w.id, i, true); setToast('Payment recorded') }}>Paid at studio</button>}
               {can.post && <button className="btn o sm" onClick={() => { hold(w.id, i, false); setToast(w.waitlist.length ? `Spot offered to ${w.waitlist[0]}` : 'Spot released') }}>Release</button>}
             </div>))}

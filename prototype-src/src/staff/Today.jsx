@@ -1,7 +1,12 @@
 import { useStore, go } from '../store.jsx'
-import { ROLES, ghs, fmtDate, quoteFor } from '../data.js'
+import { ROLES, ghs, quoteFor, longToday } from '../data.js'
 
 export const dayTotal = s => s.cash + s.momo + s.card + s.transfer
+
+export function DateBox({ date }) {
+  const d = new Date(date + 'T12:00:00')
+  return <span className="date"><small>{d.toLocaleDateString('en-GB', { month: 'short' })}</small><b>{d.getDate()}</b><small>{d.toLocaleDateString('en-GB', { weekday: 'short' })}</small></span>
+}
 
 export default function Today({ role }) {
   const { db } = useStore()
@@ -13,18 +18,20 @@ export default function Today({ role }) {
   const upcoming = db.requests.filter(r => r.status === 'quoted' || r.status === 'booked').sort((a, b) => a.date.localeCompare(b.date))
   const max = Math.max(...db.sales.map(dayTotal))
   const week = db.sales.reduce((s, d) => s + dayTotal(d), 0)
-  const greet = role === 'darlene' ? 'Good evening, D' : `Hi, ${ROLES[role].name.toLowerCase()}`
+  const h = new Date().getHours()
+  const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+  const greet = role === 'darlene' ? `${part}, D` : `${part}, ${ROLES[role].name.toLowerCase()}`
 
   return (
     <>
       <h1>{greet}</h1>
-      <p className="sub">Friday 6 November · here’s where Glaze stands today</p>
+      <p className="sub">{longToday()} · here’s where Glaze stands today</p>
 
-      <div className="grid">
-        {can.money && <div className={'kpi' + (short ? ' alert' : '')}><span className="l">Cash in till</span><span className="v">{ghs(db.till.counted)}</span><span className="s">{short ? `${ghs(short)} short of ${ghs(db.till.expected)} expected` : 'Matches the till'}</span></div>}
+      <div className="kpis">
+        {can.money && <div className={'kpi' + (short ? ' alert' : '')}><span className="l">Cash in till</span><span className="v">{ghs(db.till.counted)}</span><span className="s">{short > 0 ? `${ghs(short)} short of ${ghs(db.till.expected)} expected` : short < 0 ? `${ghs(-short)} over` : 'Matches the till'}</span></div>}
         {can.money && <div className="kpi"><span className="l">Sales today</span><span className="v">{ghs(dayTotal(today))}</span><span className="s">{ghs(week)} over the last 6 open days</span></div>}
-        <button className="kpi" style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit' }} onClick={() => go('staff/requests')}><span className="l">Event requests waiting</span><span className="v">{waiting.length}</span><span className="s">Reply the same day</span></button>
-        <button className={'kpi' + (low.length ? ' alert' : '')} style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit' }} onClick={() => go('staff/stock')}><span className="l">Running low</span><span className="v">{low.length} items</span><span className="s">{low.slice(0, 3).map(s => s.item).join(', ')}</span></button>
+        <button className={'kpi' + (waiting.length ? ' alert' : '')} onClick={() => go('staff/requests')}><span className="l">Event requests waiting</span><span className="v">{waiting.length}</span><span className="s">{waiting.length ? 'Reply today · tap to open' : 'All replied'}</span></button>
+        <button className={'kpi' + (low.length ? ' alert' : '')} onClick={() => go('staff/stock')}><span className="l">Running low</span><span className="v">{low.length} {low.length === 1 ? 'item' : 'items'}</span><span className="s">{low.slice(0, 3).map(s => s.item).join(', ')}</span></button>
       </div>
 
       <div className="two">
@@ -34,7 +41,7 @@ export default function Today({ role }) {
             {db.sales.map((d, i) => (
               <div key={d.day} className={'b' + (i === db.sales.length - 1 ? ' today' : '')}>
                 <em>{(dayTotal(d) / 1000).toFixed(1)}k</em>
-                <div className="col" style={{ height: `${(dayTotal(d) / max) * 100}%` }} />
+                <div className="col" style={{ height: `${(dayTotal(d) / max) * 78}%` }} />
                 <span>{d.day.split(' ').slice(0, 2).join(' ')}</span>
               </div>
             ))}
@@ -44,23 +51,25 @@ export default function Today({ role }) {
 
         <div className="panel">
           <h2>Upcoming events <small>who has paid</small></h2>
-          <div className="scroll"><table className="tbl">
-            <thead><tr><th>Date</th><th>Event</th><th className="n">Guests</th><th>Payment</th></tr></thead>
-            <tbody>{upcoming.map(r => (
-              <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => go('staff/requests/' + r.id)}>
-                <td>{fmtDate(r.date)}</td><td>{r.bookingName.replace('Example: ', '')}<br /><small style={{ color: 'var(--muted)' }}>{r.type}</small></td><td className="n">{r.guests}</td>
-                <td>{r.status === 'booked' ? <span className="pill booked">Deposit paid</span> : <span className="pill quoted">Awaiting deposit</span>}{can.money && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>{ghs(r.quoteTotal || quoteFor(r).total)} total</div>}</td>
-              </tr>))}</tbody>
-          </table></div>
+          <div className="cardlist">
+            {upcoming.length === 0 && <div className="empty">No confirmed events yet.</div>}
+            {upcoming.map(r => (
+              <button key={r.id} className="erow" onClick={() => go('staff/requests/' + r.id)}>
+                <DateBox date={r.date} />
+                <span className="m"><b>{r.bookingName.replace('Example: ', '')}</b><small>{r.type} · {r.guests} guests{can.money ? ` · ${ghs(r.quoteTotal || quoteFor(r).total)}` : ''}</small></span>
+                {r.status === 'booked' ? <span className="pill booked">Deposit paid</span> : <span className="pill quoted">Awaiting deposit</span>}
+              </button>))}
+          </div>
         </div>
 
         <div className="panel">
           <h2>What’s needed <small>from today’s count</small></h2>
           {low.length ? low.map(s => (
-            <div key={s.item} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 14 }}>
-              <span>{s.item}<br /><small style={{ color: 'var(--muted)' }}>{db.sources[s.group]}</small></span>
+            <div key={s.item} className="srow">
+              <span className="nm">{s.item}<small>{db.sources[s.group]}</small></span>
               <span className="pill low">{s.count}{s.unit === '%' ? '%' : ''} left</span>
             </div>)) : <div className="empty">Everything is stocked.</div>}
+          <button className="btn o sm" style={{ alignSelf: 'flex-start' }} onClick={() => go('staff/stock')}>Open the stock count</button>
         </div>
 
         {role === 'lead' && <div className="panel">
@@ -72,8 +81,9 @@ export default function Today({ role }) {
         {(role === 'ops' || role === 'darlene') && <div className="panel">
           <h2>Staff requests <small>logged by ops</small></h2>
           {db.log.slice(0, 4).map(l => (
-            <div key={l.id} style={{ fontSize: 14, borderBottom: '1px solid var(--line)', paddingBottom: 8 }}>
-              <b>{l.kind}</b> · {l.from} {l.escalate && <span className="pill low">For Darlene</span>}<br /><span style={{ color: 'var(--muted)' }}>{l.what} → {l.action}</span>
+            <div key={l.id} className="logitem">
+              <span><b>{l.kind}</b> · {l.from} {l.escalate && <span className="pill low">For Darlene</span>}</span>
+              <span className="meta">{l.what} → {l.action}</span>
             </div>))}
         </div>}
       </div>

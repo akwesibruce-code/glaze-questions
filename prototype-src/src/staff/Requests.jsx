@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useStore, go } from '../store.jsx'
-import { ROLES, ghs, fmtDate, quoteFor, findActivity, DEPOSIT } from '../data.js'
+import { DateBox } from './Today.jsx'
+import { ROLES, ghs, fmtDate, quoteFor, findActivity, DEPOSIT, TODAY, addDays } from '../data.js'
 
 const LABEL = { new: 'New', quoted: 'Quote sent', booked: 'Booked', released: 'Released', declined: 'Declined' }
-const plus = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10) }
 
 export default function Requests({ role, id }) {
   const { db } = useStore()
@@ -19,11 +19,12 @@ export default function Requests({ role, id }) {
           <button key={k} className={'chip' + (filter === k ? ' on' : '')} onClick={() => setFilter(k)}>{l} ({k === 'all' ? db.requests.length : db.requests.filter(r => r.status === k).length})</button>
         ))}
       </div>
-      <div className="list">
+      <div className="cardlist">
         {list.length === 0 && <div className="empty">Nothing here right now.</div>}
         {list.map(r => (
-          <button key={r.id} className="req" onClick={() => go('staff/requests/' + r.id)}>
-            <div className="m"><b>{r.bookingName}</b><small>{r.type} · {fmtDate(r.date)} at {r.time} · {r.guests} guests · {r.audience}</small></div>
+          <button key={r.id} className="erow" onClick={() => go('staff/requests/' + r.id)}>
+            <DateBox date={r.date} />
+            <span className="m"><b>{r.bookingName}</b><small>{r.type} · {r.time} · {r.guests} guests · {r.audience}</small></span>
             <span className={'pill ' + r.status}>{LABEL[r.status]}</span>
           </button>
         ))}
@@ -40,7 +41,7 @@ function Detail({ r, role }) {
   const [preview, setPreview] = useState(false)
   const act = findActivity(r.activity)
   const deposit = total * DEPOSIT
-  const due = plus('2026-11-06', 2)
+  const due = addDays(TODAY, 2)
   const set = fn => update(db => fn(db.requests.find(x => x.id === r.id)))
   const first = r.contactName.replace('Example ', '')
 
@@ -50,7 +51,7 @@ function Detail({ r, role }) {
     <>
       <button className="back" onClick={() => go('staff/requests')}>← All requests</button>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <h1 style={{ flex: 1, minWidth: 0 }}>{r.bookingName}</h1><span className={'pill ' + r.status}>{LABEL[r.status]}</span>
+        <h1 style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{r.bookingName}</h1><span className={'pill ' + r.status}>{LABEL[r.status]}</span>
       </div>
       <div className="two">
         <div className="panel">
@@ -78,7 +79,7 @@ function Detail({ r, role }) {
 
           {r.status === 'new' && (can.approve ? <>
             <button className="btn o" onClick={() => setPreview(!preview)}>{preview ? 'Hide' : 'Preview'} the message</button>
-            {preview && <pre style={{ whiteSpace: 'pre-wrap', background: '#E7F7E0', borderRadius: 12, padding: 12, fontFamily: 'inherit', fontSize: 14, margin: 0 }}>{msg}</pre>}
+            {preview && <pre className="msgprev">{msg}</pre>}
             <button className="btn y" onClick={() => { set(x => { x.status = 'quoted'; x.quoteTotal = total; x.depositDue = due }); setToast('Quote sent on WhatsApp and email') }}>Approve and send quote</button>
             <button className="btn o sm" onClick={() => { set(x => { x.status = 'declined' }); setToast('Request declined') }}>Decline politely</button>
           </> : <div className="lock">Waiting for Darlene to approve. {role === 'ops' ? 'You can review it and add notes for her.' : ''}</div>)}

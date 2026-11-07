@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import { useStore } from '../store.jsx'
-import { ghs, fmtDate } from '../data.js'
+import { ghs, fmtDate, TODAY } from '../data.js'
 
 export default function Stock({ role }) {
   const { db, update, setToast } = useStore()
   const [amt, setAmt] = useState('')
   const groups = [...new Set(db.stock.map(s => s.group))]
   const setCount = (item, n) => update(db => { db.stock.find(s => s.item === item).count = Math.max(0, n) })
-  const monthPower = db.power.filter(p => p.date.startsWith('2026-11')).reduce((s, p) => s + p.amount, 0)
+  const monthPower = db.power.filter(p => p.date.slice(0, 7) === TODAY.slice(0, 7)).reduce((s, p) => s + p.amount, 0)
   return (
     <>
       <h1>Stock</h1>
       <p className="sub">The daily count. Anything below its minimum shows up on the dashboard and on the restock list.</p>
-      <div className="two">
+      <div className="three">
         {groups.map(g => {
           const items = db.stock.filter(s => s.group === g)
           const low = items.filter(s => s.count < s.min)
@@ -20,8 +20,8 @@ export default function Stock({ role }) {
             <div key={g} className="panel">
               <h2>{g} <small>{db.sources[g]}</small></h2>
               {items.map(s => (
-                <div key={s.item} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
-                  <span style={{ flex: 1, minWidth: 0 }}>{s.item}<br /><small style={{ color: 'var(--muted)' }}>minimum {s.min}{s.unit === '%' ? '%' : ''}</small></span>
+                <div key={s.item} className="srow">
+                  <span className="nm">{s.item}<small>minimum {s.min}{s.unit === '%' ? '%' : ''}{s.unit && s.unit !== '%' ? ' ' + s.unit : ''}</small></span>
                   {s.count < s.min && <span className="pill low">Low</span>}
                   <div className="counter">
                     <button aria-label={`Fewer ${s.item}`} onClick={() => setCount(s.item, s.count - (s.unit === '%' ? 5 : 1))}>−</button>
@@ -36,11 +36,11 @@ export default function Stock({ role }) {
           )
         })}
         <div className="panel">
-          <h2>Electricity top-ups <small>{ghs(monthPower)} so far in November</small></h2>
+          <h2>Electricity top-ups <small>{ghs(monthPower)} so far this month</small></h2>
           {db.power.slice().reverse().map((p, i) => <div key={i} className="qline" style={{ fontSize: 14 }}><span>{fmtDate(p.date)}</span><span>{ghs(p.amount)}</span></div>)}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input aria-label="Top-up amount" type="number" placeholder="Amount (GH₵)" value={amt} onChange={e => setAmt(e.target.value)} />
-            <button className="btn b sm" disabled={!amt} onClick={() => { update(db => db.power.push({ date: '2026-11-06', amount: +amt })); setAmt(''); setToast('Top-up recorded') }}>Add</button>
+            <button className="btn b sm" disabled={!amt} onClick={() => { update(db => db.power.push({ date: TODAY, amount: +amt })); setAmt(''); setToast('Top-up recorded') }}>Add</button>
           </div>
         </div>
       </div>

@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store.jsx'
-import { fmtDate } from '../data.js'
-
-const TODAY = '2026-11-06'
+import { fmtDate, TODAY } from '../data.js'
 
 export default function Tools({ role }) {
   const tabs = {
@@ -47,7 +45,7 @@ function Report({ role }) {
       <div className="panel">
         <h2>Recent reports</h2>
         {db.reports.map(r => (
-          <div key={r.id} style={{ fontSize: 14, borderBottom: '1px solid var(--line)', paddingBottom: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div key={r.id} className="logitem">
             <b>{r.student} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>· {fmtDate(r.date)}</span></b>
             <span><b>Today:</b> {r.did}</span><span><b>Notes:</b> {r.notes}</span><span><b>Next:</b> {r.next}</span>
           </div>))}
@@ -72,7 +70,7 @@ function Tuesday({ role }) {
       <div className="panel">
         <h2>Past updates</h2>
         {db.tuesday.length === 0 ? <div className="empty">No updates yet. The first one arrives on Tuesday.</div> : db.tuesday.map((u, i) => (
-          <div key={i} style={{ fontSize: 14, display: 'flex', flexDirection: 'column', gap: 4 }}><b>{fmtDate(u.date)}</b><span><b>Classes:</b> {u.classes}</span>{u.restock && <span><b>Restock:</b> {u.restock}</span>}{u.ask && <span><b>For Darlene:</b> {u.ask}</span>}</div>))}
+          <div key={i} className="logitem"><b>{fmtDate(u.date)}</b><span><b>Classes:</b> {u.classes}</span>{u.restock && <span><b>Restock:</b> {u.restock}</span>}{u.ask && <span><b>For Darlene:</b> {u.ask}</span>}</div>))}
       </div>
     </div>
   )
@@ -93,15 +91,15 @@ function Log({ role }) {
         </div>
         <div className="field"><label htmlFor="lw">What they asked or said</label><textarea id="lw" value={f.what} onChange={e => setF({ ...f, what: e.target.value })} /></div>
         <div className="field"><label htmlFor="la">Action taken</label><input id="la" type="text" value={f.action} onChange={e => setF({ ...f, action: e.target.value })} /></div>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontWeight: 700 }}><input type="checkbox" checked={f.escalate} onChange={e => setF({ ...f, escalate: e.target.checked })} /> Darlene needs to decide or know</label>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'center', fontWeight: 700, cursor: 'pointer' }}><input type="checkbox" style={{ width: 20, height: 20, accentColor: 'var(--blue)' }} checked={f.escalate} onChange={e => setF({ ...f, escalate: e.target.checked })} /> Darlene needs to decide or know</label>
         <button className="btn y" disabled={!f.from || !f.what} onClick={() => { update(db => db.log.unshift({ ...f, id: 'l' + Date.now(), date: TODAY })); setF(empty); setToast(f.escalate ? 'Logged and sent to Darlene' : 'Logged') }}>Save to the log</button>
       </div> : <div className="lock">The ops manager logs every staff message here. Anything marked for you is at the top.</div>}
       <div className="panel">
         <h2>Log</h2>
         {list.map(l => (
-          <div key={l.id} style={{ fontSize: 14, borderBottom: '1px solid var(--line)', paddingBottom: 8 }}>
+          <div key={l.id} className="logitem">
             <b>{l.kind}</b> · {l.from} · <span style={{ color: 'var(--muted)' }}>{fmtDate(l.date)}</span> {l.escalate && <span className="pill low">For Darlene</span>}
-            <div style={{ color: 'var(--muted)' }}>{l.what}{l.action ? ` → ${l.action}` : ''}</div>
+            <div className="meta">{l.what}{l.action ? ` → ${l.action}` : ''}</div>
           </div>))}
       </div>
     </div>

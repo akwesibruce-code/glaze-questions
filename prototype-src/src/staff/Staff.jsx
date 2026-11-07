@@ -27,14 +27,15 @@ export default function Staff({ route }) {
   const parts = route.split('/')
   const tab = parts[1] || ''
   const newCount = db.requests.filter(r => r.status === 'new').length
-  const allowed = TABS.find(t => t[0] === tab)?.[2](can) ?? true
+  const def = TABS.find(t => t[0] === tab)
+  const allowed = def ? !!def[2](can) : true
 
   return (
     <div className="staff">
       <header className="shead"><div className="in">
         <img src={logo} alt="Glaze" />
-        <span style={{ fontWeight: 800, opacity: .8, fontSize: 13 }}>Staff</span>
-        <label className="who">Signed in as
+        <span className="lbl">Staff app</span>
+        <label className="who"><span>Signed in as</span>
           <select value={role} onChange={e => setRole(e.target.value)} aria-label="Switch role">
             {Object.entries(ROLES).map(([k, r]) => <option key={k} value={k}>{r.name}</option>)}
           </select>

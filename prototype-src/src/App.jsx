@@ -1,22 +1,17 @@
-import { useStore, useRoute, go } from './store.jsx'
+import { useEffect } from 'react'
+import { useStore, useRoute } from './store.jsx'
 import Site from './customer/Site.jsx'
 import Staff from './staff/Staff.jsx'
 
+// The app itself, without the preview bar. The Shell decides whether it is
+// shown directly or inside a phone frame / scaled desktop frame.
 export default function App() {
   const route = useRoute()
-  const { reset, toast } = useStore()
-  const isStaff = route.startsWith('staff')
+  const { toast, reset } = useStore()
+  useEffect(() => { window.__glazeReset = reset }, [reset])
   return (
     <>
-      <div className="protobar">
-        <b>Prototype</b><span>Example data only. Nothing is sent or charged.</span>
-        <div className="sw">
-          <button className={!isStaff ? 'on' : ''} onClick={() => go('home')}>Customer site</button>
-          <button className={isStaff ? 'on' : ''} onClick={() => go('staff')}>Staff app</button>
-        </div>
-        <button className="reset" onClick={reset}>Reset demo</button>
-      </div>
-      {isStaff ? <Staff route={route} /> : <Site route={route} />}
+      {route.startsWith('staff') ? <Staff route={route} /> : <Site route={route} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </>
   )

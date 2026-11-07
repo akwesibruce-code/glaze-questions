@@ -27,7 +27,7 @@ export default function Money({ role }) {
       {role === 'ops' && <div className="lock">Ops can see the numbers to check accuracy. Only the front desk and Darlene enter them.</div>}
       {role === 'darlene' && <div className="note info">Editing or deleting transactions stays in your own Mctee login, as it is today.</div>}
       {canEnter && <div className="panel">
-        <h2>Close of day · Fri 6 Nov <small>front desk</small></h2>
+        <h2>Close of day · today <small>front desk</small></h2>
         <div className="row2">
           {[['cash', 'Cash'], ['momo', 'MoMo'], ['card', 'Card (ABSA / Blue Penguin)'], ['transfer', 'Bank transfer']].map(([k, l]) => (
             <div key={k} className="field"><label htmlFor={'m' + k}>{l}</label><input id={'m' + k} type="number" inputMode="numeric" value={f[k]} onChange={e => setF({ ...f, [k]: e.target.value })} /></div>
@@ -40,7 +40,15 @@ export default function Money({ role }) {
       </div>}
       <div className="panel">
         <h2>Last 6 open days</h2>
-        <div className="scroll"><table className="tbl">
+        <div className="only-narrow cardlist">
+          {db.sales.map(d => (
+            <div key={d.day} className="logitem">
+              <span style={{ display: 'flex', justifyContent: 'space-between' }}><b>{d.day}</b><b>{ghs(dayTotal(d))}</b></span>
+              <span className="meta">Cash {ghs(d.cash)} · MoMo {ghs(d.momo)} · Card {ghs(d.card)} · Transfer {ghs(d.transfer)}</span>
+            </div>))}
+          <div className="qline tot"><span>Total</span><span>{ghs(totals.cash + totals.momo + totals.card + totals.transfer)}</span></div>
+        </div>
+        <div className="scroll only-wide"><table className="tbl">
           <thead><tr><th>Day</th><th className="n">Cash</th><th className="n">MoMo</th><th className="n">Card</th><th className="n">Transfer</th><th className="n">Total</th></tr></thead>
           <tbody>
             {db.sales.map(d => <tr key={d.day}><td>{d.day}</td><td className="n">{ghs(d.cash)}</td><td className="n">{ghs(d.momo)}</td><td className="n">{ghs(d.card)}</td><td className="n">{ghs(d.transfer)}</td><td className="n"><b>{ghs(dayTotal(d))}</b></td></tr>)}
