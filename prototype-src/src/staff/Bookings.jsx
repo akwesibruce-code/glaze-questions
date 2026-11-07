@@ -9,10 +9,11 @@ const CLASSES = [
   { date: '2026-11-11', time: '16:00', what: '1-1 art class', who: 'Example student (adult)' },
 ]
 
-export function Bookings() {
+export function Bookings({ role }) {
   const { db } = useStore()
+  const can = ROLES[role].can
   const items = [
-    ...db.requests.filter(r => r.status === 'booked' || r.status === 'quoted').map(r => ({ date: r.date, time: r.time, kind: 'Event', title: r.bookingName.replace('Example: ', ''), detail: `${r.guests} guests · ${findActivity(r.activity)?.name || 'Activity TBC'}`, pill: r.status, go: 'staff/requests/' + r.id })),
+    ...db.requests.filter(r => r.status === 'booked' || (can.requests && r.status === 'quoted')).map(r => ({ date: r.date, time: r.time, kind: 'Event', title: r.bookingName.replace('Example: ', ''), detail: `${r.guests} guests · ${findActivity(r.activity)?.name || 'Activity TBC'}`, pill: r.status, go: 'staff/requests/' + r.id })),
     ...db.workshops.map(w => ({ date: w.date, time: w.time, kind: 'Workshop', title: w.title, detail: `${w.booked} booked of ${w.spots}${w.holds.length ? ` · ${w.holds.length} held` : ''}`, go: 'staff/workshops' })),
     ...CLASSES.map(c => ({ date: c.date, time: c.time, kind: '1-1 class', title: c.who, detail: c.what })),
     ...(db.tables || []).map(x => ({ date: x.date, time: x.time, kind: 'Table', title: x.name, detail: `${x.people} people · ${findActivity(x.activity)?.name || 'choosing on arrival'} · ${x.status === 'paid' ? 'paid online' : 'pay at studio'}`, pill2: x.status === 'paid' ? 'booked' : 'quoted', pill2t: x.status === 'paid' ? 'Paid online' : 'Pay at studio' })),
@@ -20,13 +21,13 @@ export function Bookings() {
   return (
     <>
       <h1>Bookings</h1>
-      <p className="sub">Events, table bookings, workshops and 1-1 classes in one list. Front desk, Darlene, the lead instructor and ops see this.</p>
+      <p className="sub">{can.requests ? 'Events, table bookings, workshops and 1-1 classes in one list.' : 'Confirmed events, table bookings, workshops and 1-1 classes. Events show here once the deposit is paid.'}</p>
       <div className="cardlist">
         {items.map((i, k) => (
           <button key={k} className="erow" style={{ cursor: i.go ? 'pointer' : 'default' }} onClick={() => i.go && go(i.go)}>
             <DateBox date={i.date} />
             <span className="m"><b>{i.title}</b><small>{i.kind} · {i.time} · {i.detail}</small></span>
-            {i.pill ? <span className={'pill ' + i.pill}>{i.pill === 'booked' ? 'Deposit paid' : 'Awaiting deposit'}</span> : i.pill2 ? <span className={'pill ' + i.pill2}>{i.pill2t}</span> : <span className="pill new">{i.kind}</span>}
+            {i.pill ? <span className={'pill ' + i.pill}>{i.pill === 'booked' ? (can.requests ? 'Deposit paid' : 'Confirmed') : 'Awaiting deposit'}</span> : i.pill2 ? <span className={'pill ' + i.pill2}>{i.pill2t}</span> : <span className="pill new">{i.kind}</span>}
           </button>))}
       </div>
     </>
@@ -59,13 +60,13 @@ export function WorkshopsAdmin({ role }) {
             <span className={'pill ' + (w.spots - w.booked - w.holds.length <= 0 ? 'low' : 'new')}>{Math.max(0, w.spots - w.booked - w.holds.length)} of {w.spots} left</span>
             {w.waitlist.length > 0 && <span className="pill new">{w.waitlist.length} on waitlist</span>}
           </div>
-          {w.holds.map((h, i) => (
+          {can.requests && w.holds.map((h, i) => (
             <div key={i} className="holdrow">
               <span>{h.name} · pay at studio by <b>{fmtDate(h.until)}</b></span>
               {can.money && <button className="btn b sm" onClick={() => { hold(w.id, i, true); setToast('Payment recorded') }}>Paid at studio</button>}
               {can.post && <button className="btn o sm" onClick={() => { hold(w.id, i, false); setToast(w.waitlist.length ? `Spot offered to ${w.waitlist[0]}` : 'Spot released') }}>Release</button>}
             </div>))}
-          {w.waitlist.length > 0 && <div style={{ fontSize: 14, color: 'var(--muted)' }}>Waitlist: {w.waitlist.join(', ')}</div>}
+          {can.requests && w.waitlist.length > 0 && <div style={{ fontSize: 14, color: 'var(--muted)' }}>Waitlist: {w.waitlist.join(', ')}</div>}
         </div>
       ))}
       {can.post ? <div className="panel">

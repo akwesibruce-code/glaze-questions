@@ -53,10 +53,10 @@ export const DEPOSIT = 0.7
 export const GROUP_DISCOUNT = 0.1 // 6 or more
 
 export const ROLES = {
-  darlene: { name: 'Darlene', label: 'Owner', can: { bookings: 1, approve: 1, money: 1, prices: 1, post: 1, tools: 1, stock: 1 } },
-  frontdesk: { name: 'Front desk', label: 'Front desk', can: { bookings: 1, money: 1, tools: 1, stock: 1 } },
+  darlene: { name: 'Darlene', label: 'Owner', can: { requests: 1, storage: 1, review: 1, bookings: 1, approve: 1, money: 1, prices: 1, post: 1, tools: 1, stock: 1 } },
+  frontdesk: { name: 'Front desk', label: 'Front desk', can: { requests: 1, bookings: 1, money: 1, tools: 1, stock: 1 } },
   lead: { name: 'Lead instructor', label: 'Lead instructor', can: { bookings: 1, tools: 1, stock: 1 } },
-  ops: { name: 'Ops manager', label: 'Ops manager', can: { bookings: 1, money: 1, post: 1, tools: 1, stock: 1, log: 1 } },
+  ops: { name: 'Ops manager', label: 'Ops manager', can: { requests: 1, storage: 1, review: 1, bookings: 1, money: 1, post: 1, tools: 1, stock: 1, log: 1 } },
 }
 
 export const ghs = n => (n < 0 ? '−' : '') + 'GH₵' + Math.abs(Math.round(n)).toLocaleString('en-GH')
@@ -116,32 +116,53 @@ export function seed() {
       { day: 'Today', cash: 1320, momo: 2410, card: 1760, transfer: 0 },
     ],
     till: { expected: 1320, counted: 1300, note: 'GH₵20 short, front desk to check receipts' },
+    // Two levels, as Darlene described: the office store room feeds the studio
+    // floor, and bulk storage refills the office. Aprons are counted in one place.
     stock: [
-      { group: 'Materials', item: 'Clay', unit: 'kg', count: 4, min: 10 },
-      { group: 'Materials', item: 'Canvases (stretched)', unit: '', count: 38, min: 20 },
-      { group: 'Materials', item: 'Canvases (flat)', unit: '', count: 12, min: 20 },
-      { group: 'Materials', item: 'Sketchbooks', unit: '', count: 22, min: 15 },
-      { group: 'Materials', item: 'Paint levels', unit: '%', count: 35, min: 40 },
-      { group: 'Materials', item: 'Calabashes (small)', unit: '', count: 26, min: 15 },
-      { group: 'Materials', item: 'Calabashes (big)', unit: '', count: 6, min: 10 },
-      { group: 'Aprons', item: 'Adult aprons', unit: '', count: 24, min: 20 },
-      { group: 'Aprons', item: 'Kids aprons', unit: '', count: 18, min: 20 },
-      { group: 'Aprons', item: 'XS kids aprons', unit: '', count: 8, min: 8 },
-      { group: 'Snacks', item: 'Bottled water', unit: '', count: 30, min: 24 },
-      { group: 'Snacks', item: 'Juice boxes', unit: '', count: 10, min: 24 },
-      { group: 'Cleaning', item: 'Trash bags', unit: 'rolls', count: 3, min: 2 },
-      { group: 'Cleaning', item: 'Toilet paper', unit: 'rolls', count: 5, min: 12 },
-      { group: 'Cleaning', item: 'Kitchen roll', unit: 'rolls', count: 6, min: 4 },
-      { group: 'Cleaning', item: 'Table covers', unit: '', count: 14, min: 10 },
+      { group: 'Materials', item: 'Clay', unit: 'kg', office: 4, minOffice: 8, storage: 40, minStorage: 20 },
+      { group: 'Materials', item: 'Canvases (stretched)', unit: '', office: 38, minOffice: 20, storage: 900, minStorage: 200 },
+      { group: 'Materials', item: 'Canvases (flat)', unit: '', office: 12, minOffice: 20, storage: 340, minStorage: 100 },
+      { group: 'Materials', item: 'Sketchbooks', unit: '', office: 22, minOffice: 15, storage: 60, minStorage: 30 },
+      { group: 'Materials', item: 'Paint', unit: 'bottles', office: 18, minOffice: 24, storage: 140, minStorage: 60 },
+      { group: 'Materials', item: 'Calabashes (small)', unit: '', office: 26, minOffice: 15, storage: 120, minStorage: 40 },
+      { group: 'Materials', item: 'Calabashes (big)', unit: '', office: 6, minOffice: 10, storage: 8, minStorage: 20 },
+      { group: 'Aprons', item: 'Adult aprons', unit: '', office: 24, minOffice: 20, storage: null },
+      { group: 'Aprons', item: 'Kids aprons', unit: '', office: 18, minOffice: 20, storage: null },
+      { group: 'Aprons', item: 'XS kids aprons', unit: '', office: 8, minOffice: 8, storage: null },
+      { group: 'Snacks and drinks', item: 'Bottled water', unit: '', office: 30, minOffice: 24, storage: 48, minStorage: 24 },
+      { group: 'Snacks and drinks', item: 'Juice boxes', unit: '', office: 10, minOffice: 24, storage: 0, minStorage: 24 },
+      { group: 'Paper goods', item: 'Toilet paper', unit: 'rolls', office: 5, minOffice: 12, storage: 36, minStorage: 24 },
+      { group: 'Paper goods', item: 'Kitchen roll', unit: 'rolls', office: 6, minOffice: 4, storage: 10, minStorage: 12 },
+      { group: 'Cleaning', item: 'Trash bags', unit: 'rolls', office: 3, minOffice: 2, storage: null },
+      { group: 'Cleaning', item: 'Soap', unit: 'bottles', office: 2, minOffice: 3, storage: null },
+      { group: 'Cleaning', item: 'Table covers', unit: '', office: 14, minOffice: 10, storage: null },
+      { group: 'Cleaning', item: 'Air fresheners', unit: '', office: 3, minOffice: 2, storage: null },
     ],
-    sources: { Materials: 'Storage (bulk shipment)', Aprons: 'Laundry every two weeks', Snacks: "Auntie's shop (delivered)", Cleaning: 'Melcom downstairs' },
+    // Names and numbers to come from Darlene.
+    suppliers: {
+      'Materials': { name: 'Glaze bulk storage', phone: '', how: 'storage', note: 'Shipped to Ghana in bulk' },
+      'Aprons': { name: 'Laundry service', phone: '', how: 'pickup', note: 'Offers pickups. Deep clean every two weeks' },
+      'Snacks and drinks': { name: 'Snacks supplier', phone: '', how: 'whatsapp', note: 'Delivers' },
+      'Paper goods': { name: 'Fawn', phone: '', how: 'whatsapp', note: 'Toilet paper and kitchen roll, bought in bulk' },
+      'Cleaning': { name: 'Melcom', phone: '', how: 'inperson', note: 'Downstairs. Buy in person' },
+    },
+    // The once-a-month count of everything, down to the glue sticks.
+    fullCount: {
+      last: '2026-10-31',
+      items: [
+        ['Brushes (large)', 64], ['Brushes (small)', 110], ['Easels', 22], ['Paint palettes', 40], ['Water bowls', 36],
+        ['Gems (bags)', 18], ['Glue sticks', 45], ['Glue guns', 6], ['Tweezers', 28], ['Scissors', 30], ['Pompoms (bags)', 9],
+        ['Ribbon rolls', 14], ['Stencils', 25], ['Pencils', 120], ['Charcoal sticks', 80], ['Erasers', 50], ['Varnish tins', 7],
+        ['Terracotta pots', 35], ['Jute rope rolls', 6], ['Shells (bags)', 5], ['Beads (bags)', 11], ['Candle jars', 48], ['Wicks', 200],
+      ].map(([item, count]) => ({ item, count, counted: null })),
+    },
     power: [
       { date: '2026-10-24', amount: 500 },
       { date: '2026-10-30', amount: 600 },
       { date: '2026-11-04', amount: 500 },
     ],
     reports: [
-      { id: 'lr1', date: '2026-11-04', student: 'Example student (age 9)', did: 'Colour mixing and a landscape on canvas board', notes: 'Really enjoyed blending skies. Getting more confident with brush control. Next step is slowing down on edges.', next: 'Painting water and reflections' },
+      { id: 'lr1', date: '2026-11-04', status: 'review', parent: 'Example parent', parentPhone: '+233 20 000 0000', student: 'Example student (age 9)', did: 'Colour mixing and a landscape on canvas board', notes: 'Really enjoyed blending skies. Getting more confident with brush control. Next step is slowing down on edges.', next: 'Painting water and reflections' },
     ],
     log: [
       { id: 'l1', date: '2026-11-05', from: 'Front desk', kind: 'Payment request', what: 'Needs GH₵150 for printer ink', action: 'Approved from petty cash', escalate: false },

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { seed } from './data.js'
 
-const KEY = 'glaze-proto-v2'
+const KEY = 'glaze-proto-v3'
 const Ctx = createContext(null)
 
 function load() {

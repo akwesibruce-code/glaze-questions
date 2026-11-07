@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useStore, go } from '../store.jsx'
 import { img } from '../assets.js'
+import PhoneInput, { fmtPhone } from '../PhoneInput.jsx'
 import { ADULT_MENU, KIDS_MENU, EVENT_TYPES, CAP_ART, CAP_OTHER, findActivity, isOffDay, ghs, TODAY } from '../data.js'
-const blank = { type: '', audience: '', ages: '', celebrant: '', bookingName: '', date: '', time: '', duration: '2 hours', guests: '', activity: '', unsure: '', vendor: 'none', vendorName: '', vendorPhone: '', inspoFile: '', inspo: '', logistics: '', contactName: '', phone: '', email: '' }
+const blank = { type: '', audience: '', ages: '', celebrant: '', bookingName: '', date: '', time: '', duration: '2 hours', guests: '', activity: '', unsure: '', vendor: 'none', vendorName: '', vendorPhone: '', inspoFile: '', inspo: '', logistics: '', contactName: '', wa: { cc: '+233', num: '' }, call: { cc: '+233', num: '' }, same: true, email: '' }
 const STEPS = ['Your event', 'Date and group', 'Activity', 'Food and decor', 'Your details']
 const VENDORS = [
   ['none', 'We don’t need any', ''],
@@ -85,12 +86,12 @@ export default function Events() {
     f.date && f.time && g > 0,
     f.activity || f.unsure,
     f.vendor !== 'own' || (f.vendorName && f.vendorPhone),
-    f.contactName && f.phone,
+    f.contactName && f.wa.num && (f.same || f.call.num),
   ][step]
   const menu = f.audience === 'Kids' ? KIDS_MENU : ADULT_MENU
 
   const submit = () => {
-    update(db => db.requests.unshift({ ...f, id: 'r' + Date.now(), status: 'new', created: TODAY, guests: g, unsure: f.unsure.trim(), inspo: [f.inspoFile && `Photo: ${f.inspoFile}`, f.inspo].filter(Boolean).join(' · '), channel: 'Both' }))
+    update(db => db.requests.unshift({ ...f, phone: fmtPhone(f.wa), callLine: fmtPhone(f.same ? f.wa : f.call), id: 'r' + Date.now(), status: 'new', created: TODAY, guests: g, unsure: f.unsure.trim(), inspo: [f.inspoFile && `Photo: ${f.inspoFile}`, f.inspo].filter(Boolean).join(' · '), channel: 'Both' }))
     setSent(true); window.scrollTo(0, 0)
   }
 
@@ -172,7 +173,11 @@ export default function Events() {
         {step === 4 && <>
           <div className="field"><label htmlFor="cn">Your name</label><input id="cn" type="text" autoComplete="name" value={f.contactName} onChange={e => set('contactName', e.target.value)} /></div>
           <div className="row2">
-            <div className="field"><label htmlFor="ph">WhatsApp number</label><input id="ph" type="tel" autoComplete="tel" value={f.phone} onChange={e => set('phone', e.target.value)} /></div>
+            <PhoneInput id="ph" label="WhatsApp number" value={f.wa} onChange={v => set('wa', v)} />
+            {!f.same && <PhoneInput id="pc" label="Call line" hint="For when WhatsApp or data is off" value={f.call} onChange={v => set('call', v)} />}
+          </div>
+          <label className="samechk"><input type="checkbox" checked={f.same} onChange={e => set('same', e.target.checked)} /> My call line is the same number</label>
+          <div className="row2">
             <div className="field"><label htmlFor="em">Email <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(optional)</span></label><input id="em" type="email" autoComplete="email" value={f.email} onChange={e => set('email', e.target.value)} /></div>
           </div>
           <div className="note info">We’ll send your quote on WhatsApp and email today. A 70% deposit locks in your date.</div>

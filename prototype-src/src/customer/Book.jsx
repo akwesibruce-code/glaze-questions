@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useStore, go } from '../store.jsx'
 import { img } from '../assets.js'
 import { ADULT_MENU, KIDS_MENU, ghs, fmtDate, isOffDay, TODAY, findActivity } from '../data.js'
+import PhoneInput, { fmtPhone } from '../PhoneInput.jsx'
 
 const TIMES = ['11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
-const blank = { date: '', time: '', adults: 2, kids: 0, activity: '', pay: 'studio', name: '', phone: '' }
+const blank = { date: '', time: '', adults: 2, kids: 0, activity: '', pay: 'studio', name: '', wa: { cc: '+233', num: '' }, call: { cc: '+233', num: '' }, same: true }
 
 export default function Book() {
   const { update } = useStore()
@@ -15,10 +16,10 @@ export default function Book() {
   const act = findActivity(f.activity)
   const total = act ? act.price * people : 0
   const off = isOffDay(f.date)
-  const ok = f.date && !off && f.time && people > 0 && f.name && f.phone && (f.pay === 'studio' || act)
+  const ok = f.date && !off && f.time && people > 0 && f.name && f.wa.num && (f.same || f.call.num) && (f.pay === 'studio' || act)
 
   const submit = () => {
-    update(db => { (db.tables = db.tables || []).unshift({ id: 't' + Date.now(), ...f, people, total, status: f.pay === 'now' ? 'paid' : 'pay at studio' }) })
+    update(db => { (db.tables = db.tables || []).unshift({ id: 't' + Date.now(), ...f, phone: fmtPhone(f.wa), callLine: fmtPhone(f.same ? f.wa : f.call), people, total, status: f.pay === 'now' ? 'paid' : 'pay at studio' }) })
     setDone(true); window.scrollTo(0, 0)
   }
 
@@ -73,10 +74,12 @@ export default function Book() {
 
         <div className="card">
           <h2 className="lc">your details</h2>
+          <div className="field"><label htmlFor="bn">Name</label><input id="bn" type="text" autoComplete="name" value={f.name} onChange={e => set('name', e.target.value)} /></div>
           <div className="row2">
-            <div className="field"><label htmlFor="bn">Name</label><input id="bn" type="text" autoComplete="name" value={f.name} onChange={e => set('name', e.target.value)} /></div>
-            <div className="field"><label htmlFor="bp">WhatsApp number</label><input id="bp" type="tel" autoComplete="tel" value={f.phone} onChange={e => set('phone', e.target.value)} /></div>
+            <PhoneInput id="bp" label="WhatsApp number" value={f.wa} onChange={v => set('wa', v)} />
+            {!f.same && <PhoneInput id="bc" label="Call line" hint="For when WhatsApp or data is off" value={f.call} onChange={v => set('call', v)} />}
           </div>
+          <label className="samechk"><input type="checkbox" checked={f.same} onChange={e => set('same', e.target.checked)} /> My call line is the same number</label>
           <div className="field"><label>How would you like to pay?</label>
             <div className="cardlist">
               <button className={'opt' + (f.pay === 'studio' ? ' on' : '')} aria-pressed={f.pay === 'studio'} onClick={() => set('pay', 'studio')}><span className="dot" aria-hidden="true" /><div><b>Pay at the studio</b><small>Cash, MoMo, card or bank transfer on the day.</small></div></button>
@@ -86,7 +89,7 @@ export default function Book() {
         </div>
 
         <button className="btn y full" disabled={!ok} onClick={submit}>{f.pay === 'now' && act ? `Pay ${ghs(total)} and book` : 'Book my table'}</button>
-        {!ok && <p className="lead" style={{ fontSize: 13, textAlign: 'center', margin: '0 auto' }}>Add a date, time, number of people, your name and WhatsApp number.</p>}
+        {!ok && <p className="lead" style={{ fontSize: 13, textAlign: 'center', margin: '0 auto' }}>Add a date, time, number of people, your name and phone numbers.</p>}
       </div></div></section>
     </>
   )

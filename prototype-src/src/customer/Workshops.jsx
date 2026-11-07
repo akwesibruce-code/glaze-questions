@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useStore } from '../store.jsx'
 import { img } from '../assets.js'
 import { ghs, fmtDate, TODAY, addDays } from '../data.js'
+import PhoneInput from '../PhoneInput.jsx'
 
 const HOLD_DAYS = 3
 
@@ -9,7 +10,7 @@ export default function Workshops() {
   const { db, update, setToast } = useStore()
   const [w, setW] = useState(null)
   const [pay, setPay] = useState('now')
-  const [form, setForm] = useState({ name: '', phone: '', qty: 1 })
+  const [form, setForm] = useState({ name: '', wa: { cc: '+233', num: '' }, call: { cc: '+233', num: '' }, same: true, qty: 1 })
   const [done, setDone] = useState('')
   const until = addDays(TODAY, HOLD_DAYS)
 
@@ -20,7 +21,7 @@ export default function Workshops() {
     return () => { removeEventListener('keydown', k); document.body.style.overflow = '' }
   }, [w])
 
-  const open = ws => { setW(ws); setPay('now'); setDone(''); setForm({ name: '', phone: '', qty: 1 }) }
+  const open = ws => { setW(ws); setPay('now'); setDone(''); setForm({ name: '', wa: { cc: '+233', num: '' }, call: { cc: '+233', num: '' }, same: true, qty: 1 }) }
   const left = ws => ws.spots - ws.booked - ws.holds.length
   const full = w && left(w) <= 0
 
@@ -86,16 +87,18 @@ export default function Workshops() {
               <h3>{w.title}</h3>
               <div style={{ color: 'var(--muted)', marginTop: -6 }}>{fmtDate(w.date)} · {w.time} · {ghs(w.price)} per person</div>
               <div className="field"><label htmlFor="wn">Your name</label><input id="wn" type="text" autoComplete="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+              <PhoneInput id="wp" label="WhatsApp number" value={form.wa} onChange={v => setForm({ ...form, wa: v })} />
+              {!form.same && <PhoneInput id="wc" label="Call line" hint="For when WhatsApp or data is off" value={form.call} onChange={v => setForm({ ...form, call: v })} />}
+              <label className="samechk"><input type="checkbox" checked={form.same} onChange={e => setForm({ ...form, same: e.target.checked })} /> My call line is the same number</label>
               <div className="row2">
-                <div className="field"><label htmlFor="wp">WhatsApp number</label><input id="wp" type="tel" autoComplete="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
                 {!full && <div className="field"><label htmlFor="wq">Tickets</label><select id="wq" value={form.qty} onChange={e => setForm({ ...form, qty: e.target.value })}>{[1, 2, 3, 4].filter(n => n <= left(w)).map(n => <option key={n}>{n}</option>)}</select></div>}
               </div>
               {full ? <div className="note info">This one is fully booked. Join the waitlist and we’ll message you if a spot opens.</div> : <>
                 <button className={'opt' + (pay === 'now' ? ' on' : '')} aria-pressed={pay === 'now'} onClick={() => setPay('now')}><span className="dot" aria-hidden="true" /><div><b>Pay now · {ghs(w.price * form.qty)}</b><small>MoMo or card. Your spot is confirmed straight away.</small></div></button>
                 <button className={'opt' + (pay === 'hold' ? ' on' : '')} aria-pressed={pay === 'hold'} onClick={() => setPay('hold')}><span className="dot" aria-hidden="true" /><div><b>Hold my spot, pay at the studio</b><small>Cash, MoMo or card at Glaze by {fmtDate(until)}. Unpaid holds are released after {HOLD_DAYS} days.</small></div></button>
               </>}
-              <button className="btn y full" disabled={!form.name || !form.phone} onClick={confirm}>{full ? 'Join the waitlist' : pay === 'now' ? `Pay ${ghs(w.price * form.qty)}` : 'Hold my spot'}</button>
-              {(!form.name || !form.phone) && <p className="lead" style={{ fontSize: 13, textAlign: 'center', margin: '-4px auto 0' }}>Add your name and WhatsApp number to continue.</p>}
+              <button className="btn y full" disabled={!form.name || !form.wa.num || (!form.same && !form.call.num)} onClick={confirm}>{full ? 'Join the waitlist' : pay === 'now' ? `Pay ${ghs(w.price * form.qty)}` : 'Hold my spot'}</button>
+              {(!form.name || !form.wa.num) && <p className="lead" style={{ fontSize: 13, textAlign: 'center', margin: '-4px auto 0' }}>Add your name and WhatsApp number to continue.</p>}
             </>}
           </div>
         </div>

@@ -12,7 +12,7 @@ import Login from './Login.jsx'
 
 const TABS = [
   ['', 'Today', () => true],
-  ['requests', 'Event requests', c => c.bookings],
+  ['requests', 'Event requests', c => c.requests],
   ['bookings', 'Bookings', c => c.bookings],
   ['workshops', 'Workshops', c => c.bookings],
   ['money', 'Money', c => c.money],
@@ -30,7 +30,9 @@ export default function Staff({ route }) {
   const tab = parts[1] || ''
   const newCount = db.requests.filter(r => r.status === 'new').length
   const def = TABS.find(t => t[0] === tab)
-  const allowed = def ? !!def[2](can) : true
+  // The lead instructor can open a confirmed event's details, but not the requests list or quotes.
+  const eventDetail = tab === 'requests' && parts[2] && !can.requests
+  const allowed = eventDetail || (def ? !!def[2](can) : true)
 
   return (
     <div className="staff">
@@ -54,7 +56,7 @@ export default function Staff({ route }) {
       <main className="smain pagein" key={tab}>
         {!allowed ? <div className="lock">{ROLES[role].name} doesn’t have access to this section. Darlene decides who sees what.</div>
           : tab === 'requests' ? <Requests role={role} id={parts[2]} />
-          : tab === 'bookings' ? <Bookings />
+          : tab === 'bookings' ? <Bookings role={role} />
           : tab === 'workshops' ? <WorkshopsAdmin role={role} />
           : tab === 'money' ? <Money role={role} />
           : tab === 'stock' ? <Stock role={role} />

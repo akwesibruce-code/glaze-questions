@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store.jsx'
-import { fmtDate, TODAY } from '../data.js'
+import { fmtDate, TODAY, ROLES } from '../data.js'
+import PhoneInput, { fmtPhone } from '../PhoneInput.jsx'
 
 export default function Tools({ role }) {
   const tabs = {
@@ -29,26 +30,52 @@ export default function Tools({ role }) {
 
 function Report({ role }) {
   const { db, update, setToast } = useStore()
-  const empty = { student: '', did: '', notes: '', next: '' }
+  const can = ROLES[role].can
+  const empty = { student: '', parent: '', wa: { cc: '+233', num: '' }, did: '', notes: '', next: '' }
   const [f, setF] = useState(empty)
+  const [open, setOpen] = useState(null)
   const write = role === 'lead' || role === 'darlene'
+  const msg = r => `Hello ${r.parent.replace('Example ', '')}, here is ${r.student.replace(/^Example /, '').replace(/ \(.*\)$/, '')}’s lesson report from Glaze.\n\nWhat we did today: ${r.did}\n\nHow they got on: ${r.notes}\n\nNext lesson: ${r.next}\n\nThank you!\nGlaze Art Studio`
+  const save = () => {
+    update(db => db.reports.unshift({ id: 'lr' + Date.now(), date: TODAY, status: role === 'darlene' ? 'ready' : 'review', student: f.student, parent: f.parent, parentPhone: fmtPhone(f.wa), did: f.did, notes: f.notes, next: f.next }))
+    setF(empty); setToast(role === 'darlene' ? 'Report saved' : 'Report sent for review')
+  }
+  const send = r => {
+    update(db => { const x = db.reports.find(k => k.id === r.id); x.status = 'sent'; x.sentOn = TODAY })
+    setOpen(null); setToast(`Report sent to ${r.parent.replace('Example ', '')} on WhatsApp`)
+  }
+  const STATUS = { review: ['quoted', 'Waiting for review'], ready: ['new', 'Ready to send'], sent: ['booked', 'Sent to parent'] }
   return (
     <div className="two">
       {write && <div className="panel">
         <h2>New lesson report</h2>
-        <div className="field"><label htmlFor="rs">Student</label><input id="rs" type="text" value={f.student} onChange={e => setF({ ...f, student: e.target.value })} /></div>
+        <div className="row2">
+          <div className="field"><label htmlFor="rs">Student</label><input id="rs" type="text" value={f.student} onChange={e => setF({ ...f, student: e.target.value })} /></div>
+          <div className="field"><label htmlFor="rp">Parent’s name</label><input id="rp" type="text" value={f.parent} onChange={e => setF({ ...f, parent: e.target.value })} /></div>
+        </div>
+        <PhoneInput id="rw" label="Parent’s WhatsApp" value={f.wa} onChange={v => setF({ ...f, wa: v })} />
         <div className="field"><label htmlFor="rd">What we did today</label><span className="hint">Core lesson areas and the end product</span><textarea id="rd" value={f.did} onChange={e => setF({ ...f, did: e.target.value })} /></div>
         <div className="field"><label htmlFor="rn">Student notes</label><span className="hint">How were they today? Progress, enjoyment, difficulties, what to work on next. Always word it positively.</span><textarea id="rn" value={f.notes} onChange={e => setF({ ...f, notes: e.target.value })} /></div>
         <div className="field"><label htmlFor="rx">Next lesson</label><input id="rx" type="text" value={f.next} onChange={e => setF({ ...f, next: e.target.value })} /></div>
-        <button className="btn y" disabled={!f.student || !f.did} onClick={() => { update(db => db.reports.unshift({ ...f, id: 'lr' + Date.now(), date: TODAY })); setF(empty); setToast('Report saved and ready to send to the parent') }}>Save report</button>
+        <button className="btn y" disabled={!f.student || !f.did || !f.parent || !f.wa.num} onClick={save}>{role === 'darlene' ? 'Save report' : 'Send for review'}</button>
+        {role === 'lead' && <p className="lead" style={{ fontSize: 13, margin: 0 }}>Darlene or the ops manager reads it, then it goes to the parent on WhatsApp.</p>}
       </div>}
       <div className="panel">
-        <h2>Recent reports</h2>
-        {db.reports.map(r => (
-          <div key={r.id} className="logitem">
-            <b>{r.student} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>· {fmtDate(r.date)}</span></b>
-            <span><b>Today:</b> {r.did}</span><span><b>Notes:</b> {r.notes}</span><span><b>Next:</b> {r.next}</span>
-          </div>))}
+        <h2>Reports <small>{db.reports.filter(r => r.status === 'review').length} waiting for review</small></h2>
+        {db.reports.map(r => {
+          const [cls, label] = STATUS[r.status || 'sent']
+          return (
+            <div key={r.id} className="logitem">
+              <span style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}><b>{r.student}</b><span className="meta">· {fmtDate(r.date)}</span><span className={'pill ' + cls} style={{ marginLeft: 'auto' }}>{label}</span></span>
+              <span className="meta">For {r.parent}{r.parentPhone ? ` · ${r.parentPhone}` : ''}</span>
+              <span><b>Today:</b> {r.did}</span><span><b>Notes:</b> {r.notes}</span><span><b>Next:</b> {r.next}</span>
+              {can.review && r.status !== 'sent' && (open === r.id ? <>
+                <pre className="msgprev">{msg(r)}</pre>
+                <div className="acts"><button className="btn y sm" onClick={() => send(r)}>Send to parent on WhatsApp</button><button className="btn o sm" onClick={() => setOpen(null)}>Not yet</button></div>
+              </> : <button className="btn b sm" style={{ alignSelf: 'flex-start' }} onClick={() => setOpen(r.id)}>Review and send</button>)}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

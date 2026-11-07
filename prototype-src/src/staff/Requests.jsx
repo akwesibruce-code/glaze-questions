@@ -8,7 +8,11 @@ const LABEL = { new: 'New', quoted: 'Quote sent', booked: 'Booked', released: 'R
 export default function Requests({ role, id }) {
   const { db } = useStore()
   const [filter, setFilter] = useState('new')
-  if (id) { const r = db.requests.find(x => x.id === id); if (r) return <Detail r={r} role={role} /> }
+  if (id) {
+    const r = db.requests.find(x => x.id === id)
+    if (r && !ROLES[role].can.requests && r.status !== 'booked') return <div className="lock">This event isn’t confirmed yet. It shows up here once the deposit is paid.</div>
+    if (r) return <Detail r={r} role={role} />
+  }
   const list = db.requests.filter(r => filter === 'all' || r.status === filter)
   return (
     <>
@@ -37,7 +41,10 @@ function Detail({ r, role }) {
   const { update, setToast } = useStore()
   const can = ROLES[role].can
   const q = quoteFor(r)
-  const [total, setTotal] = useState(Math.round(r.quoteTotal ?? q.total))
+  const [art, setArt] = useState(Math.round(r.quoteTotal != null ? r.quoteTotal - (r.space || 0) : q.total))
+  const [space, setSpace] = useState(r.space || 0)
+  const total = art + (+space || 0)
+  const team = can.requests
   const [preview, setPreview] = useState(false)
   const act = findActivity(r.activity)
   const deposit = total * DEPOSIT
@@ -45,17 +52,17 @@ function Detail({ r, role }) {
   const set = fn => update(db => fn(db.requests.find(x => x.id === r.id)))
   const first = r.contactName.replace('Example ', '')
 
-  const msg = `Hi ${first}! Thank you for choosing Glaze for your ${r.type.toLowerCase()} on ${fmtDate(r.date)} at ${r.time}.\n\n${act ? act.name : 'Your activity'} for ${r.guests} guests: ${ghs(total)}${r.guests >= 6 ? ' (includes 10% group discount)' : ''}.\n\nTo lock in your date, please pay a 70% deposit of ${ghs(deposit)} by ${fmtDate(due)}. Pay by MoMo or card here: glazegh.com/pay\n\nSee you soon!\nGlaze Art Studio`
+  const msg = `Hi ${first}! Thank you for choosing Glaze for your ${r.type.toLowerCase()} on ${fmtDate(r.date)} at ${r.time}.\n\n${act ? act.name : 'Your activity'} for ${r.guests} guests: ${ghs(art)}${r.guests >= 6 ? ' (includes 10% group discount)' : ''}.${+space ? `\nSpace rental: ${ghs(+space)}` : ''}\nTotal: ${ghs(total)}.\n\nTo lock in your date, please pay a 70% deposit of ${ghs(deposit)} by ${fmtDate(due)}. Pay by MoMo or card here: glazegh.com/pay\n\nSee you soon!\nGlaze Art Studio`
 
   return (
     <>
-      <button className="back" onClick={() => go('staff/requests')}>← All requests</button>
+      <button className="back" onClick={() => go(team ? 'staff/requests' : 'staff/bookings')}>← {team ? 'All requests' : 'Bookings'}</button>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <h1 style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{r.bookingName}</h1><span className={'pill ' + r.status}>{LABEL[r.status]}</span>
+        <h1 style={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>{r.bookingName}</h1><span className={'pill ' + r.status}>{team ? LABEL[r.status] : 'Confirmed'}</span>
       </div>
       <div className="two">
         <div className="panel">
-          <h2>The request</h2>
+          <h2>{team ? 'The request' : 'Event details'}</h2>
           <dl className="kv">
             <dt>Event</dt><dd>{r.type} · {r.audience}{r.ages ? `, ages ${r.ages}` : ''}</dd>
             {r.celebrant && <><dt>Birthday star</dt><dd>{r.celebrant}</dd></>}
@@ -64,23 +71,24 @@ function Detail({ r, role }) {
             <dt>Activity</dt><dd>{act ? act.name : <i>Not sure yet: {r.unsure}</i>}</dd>
             <dt>Food and decor</dt><dd>{r.vendor === 'own' ? `Own vendor: ${r.vendorName}, ${r.vendorPhone}` : r.vendor === 'glaze' ? `Glaze vendor${r.inspo ? ` · ${r.inspo}` : ''}` : 'None'}</dd>
             {r.logistics && <><dt>Notes</dt><dd>{r.logistics}</dd></>}
-            <dt>Contact</dt><dd>{r.contactName} · {r.phone}{r.email ? ` · ${r.email}` : ''}</dd>
+            {team && <><dt>Contact</dt><dd>{r.contactName} · WhatsApp {r.phone}{r.callLine && r.callLine !== r.phone ? ` · call ${r.callLine}` : ''}{r.email ? ` · ${r.email}` : ''}</dd></>}
           </dl>
         </div>
 
-        <div className="panel">
+        {team && <div className="panel">
           <h2>Quote <small>only your team sees this</small></h2>
           {q.lines.map(l => <div key={l.label} className="qline"><span>{l.label}</span><span>{l.tbc ? 'TBC' : ghs(l.amount)}</span></div>)}
-          {can.approve && r.status === 'new'
-            ? <div className="field" style={{ marginTop: 6 }}><label htmlFor="tot">Final price (you can adjust)</label><input id="tot" type="number" value={total} onChange={e => setTotal(+e.target.value)} /></div>
-            : null}
+          {can.approve && r.status === 'new' ? <>
+            <div className="field" style={{ marginTop: 6 }}><label htmlFor="art">Art and activity (you can adjust)</label><input id="art" type="number" value={art} onChange={e => setArt(+e.target.value || 0)} /></div>
+            <div className="field"><label htmlFor="spc">Space rental</label><span className="hint">Darlene is sending the space rental rates. Until then, type the amount.</span><input id="spc" type="number" placeholder="0" value={space || ''} onChange={e => setSpace(+e.target.value || 0)} /></div>
+          </> : <div className="qline"><span>Space rental</span><span>{+space ? ghs(+space) : 'TBC'}</span></div>}
           <div className="qline tot"><span>Total</span><span>{ghs(total)}</span></div>
           <div className="qline"><span>70% deposit to lock the date</span><b>{ghs(deposit)}</b></div>
 
           {r.status === 'new' && (can.approve ? <>
             <button className="btn o" onClick={() => setPreview(!preview)}>{preview ? 'Hide' : 'Preview'} the message</button>
             {preview && <pre className="msgprev">{msg}</pre>}
-            <button className="btn y" onClick={() => { set(x => { x.status = 'quoted'; x.quoteTotal = total; x.depositDue = due }); setToast('Quote sent on WhatsApp and email') }}>Approve and send quote</button>
+            <button className="btn y" onClick={() => { set(x => { x.status = 'quoted'; x.quoteTotal = total; x.space = +space || 0; x.depositDue = due }); setToast('Quote sent on WhatsApp and email') }}>Approve and send quote</button>
             <button className="btn o sm" onClick={() => { set(x => { x.status = 'declined' }); setToast('Request declined') }}>Decline politely</button>
           </> : <div className="lock">Waiting for Darlene to approve. {role === 'ops' ? 'You can review it and add notes for her.' : ''}</div>)}
 
@@ -90,7 +98,7 @@ function Detail({ r, role }) {
             {can.approve && <button className="btn o sm" onClick={() => { set(x => { x.status = 'released' }); setToast('Date released') }}>Release the date</button>}
           </>}
           {r.status === 'booked' && <div className="note ok">Deposit of {ghs(r.depositPaid || deposit)} paid. {ghs((r.quoteTotal || total) - (r.depositPaid || deposit))} due on the day.</div>}
-        </div>
+        </div>}
       </div>
     </>
   )
